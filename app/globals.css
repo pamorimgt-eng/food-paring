@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  /* Tinto escuro — a cor do produto. */
+  --color-vinho-50: #fdf3f4;
+  --color-vinho-100: #fbe6e8;
+  --color-vinho-200: #f6d0d5;
+  --color-vinho-300: #eeaab3;
+  --color-vinho-400: #e27b8b;
+  --color-vinho-500: #d14f65;
+  --color-vinho-600: #bb2f4e;
+  --color-vinho-700: #9c2241;
+  --color-vinho-800: #7a1e37;
+  --color-vinho-900: #5c1a2c;
+  --color-vinho-950: #380a17;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  /* Interface usada em serviço: nada de selecionar texto sem querer ao tocar. */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+}
+
+/* Alvos de toque com pelo menos 44px — o empregado usa isto com uma mão. */
+@utility toque {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}

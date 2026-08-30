@@ -1,0 +1,363 @@
+// Comanda Digital com Wine Pairing por IA
+// Decisões de modelação explicadas em ARQUITETURA.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// As extensões unaccent e pg_trgm (pesquisa insensível a acentos, ver
+// ARQUITETURA.md §3.6) são criadas na migration inicial, em SQL.
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Papel {
+  ADMIN
+  SALA
+  COZINHA
+}
+
+enum TipoCarta {
+  MENU
+  VINHOS
+}
+
+enum EstadoUpload {
+  PROCESSANDO
+  REVISAO // IA extraiu, à espera de confirmação humana
+  CONFIRMADO
+  ERRO
+}
+
+/// Como o registo entrou no sistema: foto da carta ou "Adicionar referência".
+enum Origem {
+  FOTO
+  MANUAL
+}
+
+enum TipoVinho {
+  TINTO
+  BRANCO
+  ROSE
+  ESPUMANTE
+  FORTIFICADO
+  LARANJA
+}
+
+/// Fiabilidade da ficha técnica obtida por pesquisa web.
+/// BAIXA aparece sinalizado no backoffice para validação do gerente.
+enum Confianca {
+  ALTA
+  MEDIA
+  BAIXA
+}
+
+enum AlvoPergunta {
+  PRATO
+  VINHO
+}
+
+enum EstadoPergunta {
+  ABERTA
+  RESPONDIDA
+  IGNORADA // o gerente respondeu "Não sei" — não volta a perguntar
+}
+
+enum EstadoPedido {
+  ABERTO // a ser composto à mesa
+  ENVIADO // entregue à cozinha
+  PREPARACAO
+  PRONTO
+  ENTREGUE
+  FECHADO
+}
+
+enum EstadoItem {
+  PENDENTE
+  PREPARACAO
+  PRONTO
+}
+
+/// Banda de preço. Calculada em runtime por tercis da carta do restaurante,
+/// nunca guardada no vinho — 30 € é premium numa casa e económico noutra.
+enum Banda {
+  ECONOMICO
+  MEDIO
+  PREMIUM
+}
+
+// ---------------------------------------------------------------------------
+// Tenant
+// ---------------------------------------------------------------------------
+
+model Restaurante {
+  id       String   @id @default(uuid())
+  nome     String
+  slug     String   @unique
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  utilizadores Utilizador[]
+  mesas        Mesa[]
+  pratos       Prato[]
+  cartaVinhos  CartaVinho[]
+  uploads      CartaUpload[]
+  perguntas    Pergunta[]
+  pedidos      Pedido[]
+
+  @@map("restaurantes")
+}
+
+model Utilizador {
+  id            String  @id @default(uuid())
+  restauranteId String  @map("restaurante_id")
+  nome          String
+  email         String? // só o backoffice usa email; a sala entra por PIN
+  /// PIN de 4 dígitos com hash. Login rápido para quem está a meio de turno.
+  pinHash       String? @map("pin_hash")
+  papel         Papel
+
+  criadoEm    DateTime    @default(now()) @map("criado_em")
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  pedidos     Pedido[]
+
+  @@unique([restauranteId, email])
+  @@index([restauranteId])
+  @@map("utilizadores")
+}
+
+model Mesa {
+  id            String @id @default(uuid())
+  restauranteId String @map("restaurante_id")
+  numero        String
+  capacidade    Int    @default(2)
+
+  // Sem campo "estado": é derivado dos pedidos abertos, para não dessincronizar.
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  pedidos     Pedido[]
+
+  @@unique([restauranteId, numero])
+  @@index([restauranteId])
+  @@map("mesas")
+}
+
+// ---------------------------------------------------------------------------
+// Ingestão — foto da carta
+// ---------------------------------------------------------------------------
+
+model CartaUpload {
+  id            String       @id @default(uuid())
+  restauranteId String       @map("restaurante_id")
+  tipo          TipoCarta
+  imagemUrl     String       @map("imagem_url")
+  estado        EstadoUpload @default(PROCESSANDO)
+  /// O que a IA leu da foto, antes da revisão humana.
+  extraido      Json?
+  erro          String?
+  criadoEm      DateTime     @default(now()) @map("criado_em")
+
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+
+  @@index([restauranteId, estado])
+  @@map("cartas_upload")
+}
+
+// ---------------------------------------------------------------------------
+// Pratos
+// ---------------------------------------------------------------------------
+
+model Prato {
+  id            String  @id @default(uuid())
+  restauranteId String  @map("restaurante_id")
+  nome          String
+  descricao     String?
+  seccao        String? // entradas, principais, sobremesas...
+  preco         Decimal @db.Decimal(10, 2)
+  disponivel    Boolean @default(true)
+  origem        Origem  @default(MANUAL)
+
+  /// Análise da IA: proteína, gordura, método de confeção, condimentos,
+  /// intensidade, textura. Em jsonb porque evolui sem migration.
+  atributos     Json?
+  enriquecidoEm DateTime? @map("enriquecido_em")
+
+  criadoEm    DateTime     @default(now()) @map("criado_em")
+  restaurante Restaurante  @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  itens       PedidoItem[]
+  pairings    Pairing[]
+
+  @@index([restauranteId, disponivel])
+  @@map("pratos")
+}
+
+// ---------------------------------------------------------------------------
+// Vinhos — catálogo global + carta por restaurante
+// ---------------------------------------------------------------------------
+
+/// Ficha técnica partilhada por todos os restaurantes. Evita que cada casa
+/// reintroduza os mesmos vinhos — é o que torna o onboarding viável.
+model VinhoCatalogo {
+  id       String    @id @default(uuid())
+  nome     String
+  produtor String?
+  ano      Int?
+  regiao   String?
+  pais     String?
+  castas   String[]
+  tipo     TipoVinho
+
+  /// Corpo, acidez, taninos, estágio em barrica, teor alcoólico, perfil
+  /// aromático. Vem da pesquisa web, em jsonb para evoluir livremente.
+  atributos     Json?
+  /// Fontes citadas da pesquisa web, para o gerente poder verificar.
+  fontes        Json?
+  confianca     Confianca @default(BAIXA)
+  enriquecidoEm DateTime? @map("enriquecido_em")
+
+  criadoEm DateTime     @default(now()) @map("criado_em")
+  cartas   CartaVinho[]
+
+  @@unique([nome, produtor, ano])
+  @@index([tipo])
+  @@map("vinhos_catalogo")
+}
+
+/// O que este restaurante concretamente tem, e a que preço.
+model CartaVinho {
+  id              String  @id @default(uuid())
+  restauranteId   String  @map("restaurante_id")
+  vinhoCatalogoId String  @map("vinho_catalogo_id")
+  preco           Decimal @db.Decimal(10, 2)
+  /// Permite ordenar sugestões por margem, não só por preço de venda.
+  custo           Decimal? @db.Decimal(10, 2)
+  stock           Int      @default(0)
+  disponivel      Boolean  @default(true)
+  origem          Origem   @default(MANUAL)
+
+  criadoEm    DateTime        @default(now()) @map("criado_em")
+  restaurante Restaurante     @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  vinho       VinhoCatalogo   @relation(fields: [vinhoCatalogoId], references: [id], onDelete: Restrict)
+  pairings    Pairing[]
+  sugestoes   PedidoSugestao[]
+
+  @@unique([restauranteId, vinhoCatalogoId])
+  @@index([restauranteId, disponivel])
+  @@map("carta_vinhos")
+}
+
+// ---------------------------------------------------------------------------
+// Perguntas em aberto — quando a IA não sabe, pergunta
+// ---------------------------------------------------------------------------
+
+/// Em vez de inventar ou despejar um formulário de 12 campos, o sistema faz
+/// perguntas curtas em linguagem normal. "Não sei" é sempre resposta válida e
+/// não bloqueia o item — só faz os argumentos evitarem esse atributo.
+model Pergunta {
+  id            String       @id @default(uuid())
+  restauranteId String       @map("restaurante_id")
+  alvoTipo      AlvoPergunta @map("alvo_tipo")
+  alvoId        String       @map("alvo_id")
+  /// Atributo em falta, ex: "estagio_barrica".
+  campo         String
+  pergunta      String
+  /// Opções sugeridas, ex: ["Sim", "Não", "Não sei"].
+  opcoes        Json?
+  resposta      String?
+  estado        EstadoPergunta @default(ABERTA)
+
+  criadoEm    DateTime    @default(now()) @map("criado_em")
+  respondidoEm DateTime?  @map("respondido_em")
+  restaurante Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+
+  @@index([restauranteId, estado])
+  @@index([alvoTipo, alvoId])
+  @@map("perguntas")
+}
+
+// ---------------------------------------------------------------------------
+// Pairing — matriz pré-calculada
+// ---------------------------------------------------------------------------
+
+/// Gerado em background após o enriquecimento. À mesa isto é só um SELECT:
+/// instantâneo, sem custo por pedido e sempre igual para o mesmo prato.
+model Pairing {
+  id           String @id @default(uuid())
+  pratoId      String @map("prato_id")
+  cartaVinhoId String @map("carta_vinho_id")
+  /// 0–100. Quão bem este vinho harmoniza com este prato.
+  score        Int
+  /// 2–3 argumentos de venda prontos a dizer ao cliente.
+  argumentos   Json
+
+  geradoEm   DateTime   @default(now()) @map("gerado_em")
+  prato      Prato      @relation(fields: [pratoId], references: [id], onDelete: Cascade)
+  cartaVinho CartaVinho @relation(fields: [cartaVinhoId], references: [id], onDelete: Cascade)
+
+  @@unique([pratoId, cartaVinhoId])
+  @@index([pratoId, score])
+  @@map("pairings")
+}
+
+// ---------------------------------------------------------------------------
+// Serviço
+// ---------------------------------------------------------------------------
+
+model Pedido {
+  id            String       @id @default(uuid())
+  restauranteId String       @map("restaurante_id")
+  mesaId        String       @map("mesa_id")
+  utilizadorId  String?      @map("utilizador_id")
+  estado        EstadoPedido @default(ABERTO)
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  restaurante Restaurante      @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  mesa        Mesa             @relation(fields: [mesaId], references: [id], onDelete: Restrict)
+  utilizador  Utilizador?      @relation(fields: [utilizadorId], references: [id], onDelete: SetNull)
+  itens       PedidoItem[]
+  sugestoes   PedidoSugestao[]
+
+  @@index([restauranteId, estado])
+  @@index([mesaId, estado])
+  @@map("pedidos")
+}
+
+model PedidoItem {
+  id         String     @id @default(uuid())
+  pedidoId   String     @map("pedido_id")
+  pratoId    String     @map("prato_id")
+  quantidade Int        @default(1)
+  notas      String?
+  estado     EstadoItem @default(PENDENTE)
+
+  pedido Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  prato  Prato  @relation(fields: [pratoId], references: [id], onDelete: Restrict)
+
+  @@index([pedidoId])
+  @@map("pedido_itens")
+}
+
+/// Histórico do que foi sugerido e se o cliente aceitou. Dá ao restaurante a
+/// métrica que interessa: quanto vinho se vendeu por influência do sistema.
+model PedidoSugestao {
+  id           String  @id @default(uuid())
+  pedidoId     String  @map("pedido_id")
+  cartaVinhoId String  @map("carta_vinho_id")
+  banda        Banda
+  argumentos   Json
+  aceite       Boolean?
+
+  criadoEm   DateTime   @default(now()) @map("criado_em")
+  pedido     Pedido     @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  cartaVinho CartaVinho @relation(fields: [cartaVinhoId], references: [id], onDelete: Restrict)
+
+  @@index([pedidoId])
+  @@map("pedido_sugestoes")
+}
