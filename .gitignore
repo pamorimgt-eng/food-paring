@@ -47,5 +47,6 @@ next-env.d.ts
 /uploads/
 /tmp/
 
-# Claude Code — permissões locais desta sessão, não partilhadas
+# Claude Code — estado local desta sessão, não partilhado
 .claude/settings.local.json
+.claude/scheduled_tasks.lock

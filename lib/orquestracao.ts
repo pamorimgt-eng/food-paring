@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { analisarPrato, investigarVinho, perguntasParaVinho } from "./ia/enriquecimento";
 import { gerarPairingsDoPrato, type VinhoParaPairing } from "./ia/pairing";
+import { gerarParesSemIA } from "./pairingRegras";
 import type { TAtributosPrato } from "./ia/esquemas";
 
 /**
@@ -81,7 +82,7 @@ export async function enriquecerVinho(cartaVinhoId: string): Promise<void> {
  *
  * À mesa isto nunca corre: é sempre um SELECT sobre o que aqui se gera.
  */
-export async function regenerarPairings(restauranteId: string): Promise<void> {
+async function carregarPratosEVinhosProntos(restauranteId: string) {
   // Filtro "atributos preenchidos" feito em JS: o Prisma trata null em campos
   // Json de forma especial (Prisma.JsonNull vs. ausência de valor), pelo que
   // um filtro no WHERE aqui seria mais frágil do que este `!= null`.
@@ -108,35 +109,78 @@ export async function regenerarPairings(restauranteId: string): Promise<void> {
       preco: Number(cv.preco),
     }));
 
+  return { pratos, vinhosProntos };
+}
+
+async function gravarPares(
+  pratoId: string,
+  pares: { vinhoId: string; score: number; argumentos: string[] }[],
+) {
+  await prisma.$transaction([
+    prisma.pairing.deleteMany({ where: { pratoId } }),
+    ...(pares.length > 0
+      ? [
+          prisma.pairing.createMany({
+            data: pares.map((p) => ({
+              pratoId,
+              cartaVinhoId: p.vinhoId,
+              score: p.score,
+              argumentos: p.argumentos,
+            })),
+          }),
+        ]
+      : []),
+  ]);
+}
+
+export async function regenerarPairings(restauranteId: string): Promise<void> {
+  const { pratos, vinhosProntos } = await carregarPratosEVinhosProntos(restauranteId);
+  if (vinhosProntos.length === 0) return;
+
+  for (const prato of pratos) {
+    if (!prato.atributos) continue;
+    const atributos = prato.atributos as unknown as TAtributosPrato;
+
+    let pares;
+    try {
+      const resultado = await gerarPairingsDoPrato(
+        { nome: prato.nome, descricao: prato.descricao, atributos },
+        vinhosProntos,
+      );
+      pares = resultado.pares;
+    } catch (erro) {
+      // Sem crédito, chave inválida ou API em baixo: o prato fica sem
+      // sugestão nenhuma se pararmos aqui. Preferível cair no motor de
+      // regras (lib/pairingRegras.ts) — mais rígido, mas mantém a app
+      // utilizável até a IA voltar a estar disponível.
+      console.error(`[pairing] IA falhou para "${prato.nome}", a usar regras:`, erro);
+      pares = gerarParesSemIA(prato.nome, atributos, vinhosProntos);
+    }
+
+    await gravarPares(prato.id, pares);
+  }
+}
+
+/**
+ * Mesma matriz, mas com um motor de regras determinístico em vez de IA (ver
+ * lib/pairingRegras.ts) — sem nenhuma chamada externa, portanto sem custo e
+ * sem depender de crédito na conta Anthropic. Mais rígido que a versão por
+ * IA, mas mantém a app utilizável quando a IA não está disponível.
+ */
+export async function regenerarPairingsSemIA(restauranteId: string): Promise<void> {
+  const { pratos, vinhosProntos } = await carregarPratosEVinhosProntos(restauranteId);
   if (vinhosProntos.length === 0) return;
 
   for (const prato of pratos) {
     if (!prato.atributos) continue;
 
-    const resultado = await gerarPairingsDoPrato(
-      {
-        nome: prato.nome,
-        descricao: prato.descricao,
-        atributos: prato.atributos as unknown as TAtributosPrato,
-      },
+    const pares = gerarParesSemIA(
+      prato.nome,
+      prato.atributos as unknown as TAtributosPrato,
       vinhosProntos,
     );
 
-    await prisma.$transaction([
-      prisma.pairing.deleteMany({ where: { pratoId: prato.id } }),
-      ...(resultado.pares.length > 0
-        ? [
-            prisma.pairing.createMany({
-              data: resultado.pares.map((p) => ({
-                pratoId: prato.id,
-                cartaVinhoId: p.vinhoId,
-                score: p.score,
-                argumentos: p.argumentos,
-              })),
-            }),
-          ]
-        : []),
-    ]);
+    await gravarPares(prato.id, pares);
   }
 }
 
