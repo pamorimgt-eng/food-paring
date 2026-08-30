@@ -31,14 +31,15 @@ funcionar num restaurante a sério:
 |---|---|
 | Frontend | Next.js 16 (App Router) + Tailwind 4, mobile-first / PWA |
 | Backend | Next.js API routes e Server Actions |
-| Base de dados | PostgreSQL (Supabase) via Prisma 6 |
-| Tempo real | Supabase Realtime, com polling de fallback no KDS |
+| Base de dados | PostgreSQL via Prisma 6 |
+| Tempo real | Polling no KDS (a cada 4s) |
 | IA | Claude `claude-opus-5` — visão, pesquisa web, structured outputs |
-| Deploy | Vercel + Supabase |
+| Deploy | Docker num VPS, gerido via [Easypanel](https://easypanel.io) |
 
 ## Correr localmente
 
-Precisas de Node 20+ e de um Postgres — local ou Supabase.
+Precisas de Node 20+ e de um Postgres — local, ou o que correr no VPS de
+produção (ver [Deploy](#deploy)).
 
 ```bash
 npm install
@@ -50,8 +51,6 @@ Copia o ficheiro de ambiente e preenche-o:
 cp .env.example .env
 ```
 
-**Opção A — Postgres local (mais rápido para experimentar):**
-
 ```bash
 DATABASE_URL="postgresql://<utilizador>:<password>@localhost:5432/food_pairing"
 DIRECT_URL="postgresql://<utilizador>:<password>@localhost:5432/food_pairing"
@@ -59,23 +58,15 @@ DIRECT_URL="postgresql://<utilizador>:<password>@localhost:5432/food_pairing"
 
 Cria a base de dados antes de migrar: `createdb food_pairing` (ou `CREATE
 DATABASE food_pairing;` no `psql`). As extensões `unaccent` e `pg_trgm` são
-criadas automaticamente pela primeira migration.
+criadas automaticamente pela primeira migration. `DATABASE_URL` e
+`DIRECT_URL` são a mesma ligação — só há distinção quando há um pooler
+(pgBouncer) entre a app e a BD, o que não é o caso aqui.
 
-**Opção B — Supabase (o que o deploy usa):**
-
-| Variável | Onde obter |
-|---|---|
-| `DATABASE_URL` | Supabase › Project Settings › Database › Connection pooling (porta 6543) |
-| `DIRECT_URL` | A mesma ligação, mas direta (porta 5432). As migrations precisam dela. |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase › Project Settings › API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase › Project Settings › API |
-| `SUPABASE_SERVICE_ROLE_KEY` | O mesmo sítio. **Só no servidor** — nunca com prefixo `NEXT_PUBLIC_`. |
-
-Em qualquer dos casos, preenche também:
+Preenche também:
 
 | Variável | Onde obter |
 |---|---|
-| `ANTHROPIC_API_KEY` | console.anthropic.com › API Keys. Sem isto, tudo corre exceto a leitura de fotos e o enriquecimento por IA. |
+| `ANTHROPIC_API_KEY` | console.anthropic.com › API Keys. Sem isto, tudo corre exceto a leitura de fotos e o enriquecimento por IA — cai automaticamente no motor de regras (`lib/pairingRegras.ts`). |
 
 Cria o esquema, semeia um restaurante de demonstração e arranca:
 
@@ -101,16 +92,50 @@ sala.
 
 ## Deploy
 
-**Base de dados — Supabase.** Cria o projeto, copia as duas connection strings
-para o `.env` e aplica as migrations com `npx prisma migrate deploy`.
+VPS com [Easypanel](https://easypanel.io) já instalado. A app corre em Docker
+(`Dockerfile` na raiz, build multi-stage com output `standalone` do Next.js);
+o Postgres corre como serviço à parte no mesmo servidor.
 
-**Aplicação — Vercel.** Liga o repositório, define as mesmas variáveis de
-ambiente em Project Settings › Environment Variables e faz deploy. O build
-corre `prisma generate` automaticamente através do `postinstall`.
+### 1. Base de dados
 
-> O `ANTHROPIC_API_KEY` e o `SUPABASE_SERVICE_ROLE_KEY` só podem existir no
-> ambiente de servidor. Um `NEXT_PUBLIC_` à frente de qualquer um deles
-> expõe-nos no browser.
+No painel Easypanel: **+ Service › Postgres**. Um clique, sem configuração.
+Depois de criado, abre o serviço e copia a **connection string interna**
+(algo como `postgres://postgres:<password>@nome-do-servico:5432/postgres`) —
+os serviços no mesmo projeto Easypanel falam entre si pelo nome, não por IP.
+
+### 2. Aplicação
+
+**+ Service › App**, aponta ao repositório
+[`pamorimgt-eng/food-paring`](https://github.com/pamorimgt-eng/food-paring) na
+branch `main`. O Easypanel deteta o `Dockerfile` sozinho.
+
+Em **Environment**, define:
+
+| Variável | Valor |
+|---|---|
+| `DATABASE_URL` | A connection string do passo 1 |
+| `DIRECT_URL` | A mesma string (não há pooler neste setup) |
+| `ANTHROPIC_API_KEY` | A tua chave — console.anthropic.com › API Keys |
+
+Em **Mounts** (ou "Volumes"), adiciona um volume persistente em `/app/uploads`
+— sem isto, as fotos carregadas desaparecem a cada novo deploy.
+
+Em **Domain**, por agora sem domínio configurado: a app fica acessível pelo
+IP do servidor na porta que expuseres (mapeia a porta do container, `3000`,
+para uma porta do host em **Advanced**). Quando houveres um domínio, o
+Easypanel trata do SSL automaticamente via Let's Encrypt.
+
+Faz **Deploy**. As migrations correm sozinhas no arranque do container
+(`prisma migrate deploy`, dentro do `CMD` do Dockerfile) — não é preciso
+correr nada à mão.
+
+> `ANTHROPIC_API_KEY` nunca deve ter o prefixo `NEXT_PUBLIC_` — isso
+> exporia a chave no browser. As variáveis acima já estão corretas assim.
+
+### Redeploy
+
+Cada push a `main` não atualiza sozinho — no Easypanel, ativa **auto-deploy**
+nas definições do serviço, ou clica **Deploy** manualmente depois de um push.
 
 ## Estrutura
 
@@ -126,7 +151,8 @@ lib/
   pesquisaPratos.ts  Autocomplete insensível a acentos (unaccent + pg_trgm)
   sugestao.ts        Motor de sugestão à mesa — só consulta, sem IA
   orquestracao.ts    Liga extração → enriquecimento → pairing
-  uploads.ts         Guarda as fotos carregadas (Supabase Storage em produção)
+  uploads.ts         Guarda as fotos carregadas em disco (/uploads)
+  pairingRegras.ts   Pairing por regras — fallback sem IA (ver ARQUITETURA.md)
   ia/
     cliente.ts       Cliente Claude e modelo usado
     esquemas.ts      Schemas Zod dos structured outputs
@@ -149,10 +175,10 @@ Por fazer antes de um piloto real:
 
 - **Login por PIN** (ARQUITETURA.md §3.5) — a app está fixa a um único
   restaurante de demonstração, sem autenticação.
-- **Supabase Storage** para as fotos carregadas — hoje ficam em disco local
-  (`/uploads`, fora do git).
-- **Supabase Realtime** no KDS — o polling a cada 4s funciona, mas um canal
-  Realtime dava latência menor.
-- Ligar a um projeto Anthropic com `ANTHROPIC_API_KEY` real para testar a
-  ingestão por foto e o enriquecimento — sem chave, tudo o resto funciona e o
-  erro fica isolado a essa chamada.
+- **Backups da base de dados** — self-hosted significa que os backups são
+  responsabilidade nossa. O Easypanel tem a opção de backups automáticos do
+  serviço Postgres; vale a pena ativar antes de dados reais entrarem.
+- **WebSockets/SSE no KDS** — o polling a cada 4s funciona bem para o volume
+  de um restaurante, mas tem uma janela de latência que um canal em tempo
+  real eliminaria.
+- **Domínio + SSL** — por agora a app fica só no IP do servidor.

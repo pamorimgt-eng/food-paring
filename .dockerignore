@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.env
+.env.local
+.claude
+uploads
+*.log
+README.md
+ARQUITETURA.md
+ideia-comanda-digital-wine-pairing.md

@@ -104,14 +104,23 @@ Falhas identificadas na revisão e como foram resolvidas:
 |---|---|---|
 | Frontend | Next.js (App Router) + Tailwind, PWA | Um framework para sala, KDS e backoffice; instalável sem loja de apps |
 | Backend | Next.js API routes / Server Actions | Um deployment em vez de dois |
-| BD | PostgreSQL (Supabase) | Postgres + Auth + Realtime + Storage no mesmo sítio |
+| BD | PostgreSQL | Extensões `unaccent` + `pg_trgm` para o autocomplete |
 | ORM | Prisma | Migrations versionadas e type-safety |
-| Tempo real | Supabase Realtime (+ polling de fallback) | KDS sem gerir WebSockets à mão |
+| Tempo real | Polling no KDS | Simples, sem infraestrutura extra a gerir |
 | IA | Claude `claude-opus-5` | Visão (fotos de cartas), `web_search` (fichas de vinho), structured outputs |
-| Deploy | Vercel + Supabase | — |
+| Deploy | Docker num VPS próprio, via Easypanel | Controlo total, sem depender de serviços geridos de terceiros |
 
 Sem backend Express separado: para este âmbito, dois deployments só acrescentam
 trabalho.
+
+**Nota de decisão (self-hosted vs. gerido):** a proposta inicial previa
+Vercel + Supabase (zero manutenção, mas com custo e dependência de serviços
+geridos). Optou-se por self-hosting num VPS com Easypanel — mais controlo e
+sem depender de terceiros, ao custo de a equipa ficar responsável por
+backups, SSL e atualizações de segurança do servidor. A app já estava
+desenhada sem depender de features específicas do Supabase (Realtime via
+polling, Storage via disco local), por isso a mudança não exigiu alterações
+de arquitetura — só do alvo de deploy.
 
 ## 5. Modelo de dados
 
