@@ -76,14 +76,10 @@ export const FichaVinho = z.object({
   castas: z.array(z.string()),
   regiao: z.string().nullable(),
   pais: z.string().nullable(),
-  tipo: z.enum([
-    "TINTO",
-    "BRANCO",
-    "ROSE",
-    "ESPUMANTE",
-    "FORTIFICADO",
-    "LARANJA",
-  ]),
+  tipo: z
+    .enum(["TINTO", "BRANCO", "ROSE", "ESPUMANTE", "FORTIFICADO", "LARANJA"])
+    .nullable()
+    .describe("null apenas se genuinamente não for possível determinar."),
   atributos: AtributosVinho,
   /// URLs consultados, para o gerente poder verificar o que foi afirmado.
   fontes: z.array(z.string()),

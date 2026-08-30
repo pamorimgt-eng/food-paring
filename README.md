@@ -38,7 +38,7 @@ funcionar num restaurante a sério:
 
 ## Correr localmente
 
-Precisas de Node 20+ e de uma conta Supabase.
+Precisas de Node 20+ e de um Postgres — local ou Supabase.
 
 ```bash
 npm install
@@ -50,6 +50,19 @@ Copia o ficheiro de ambiente e preenche-o:
 cp .env.example .env
 ```
 
+**Opção A — Postgres local (mais rápido para experimentar):**
+
+```bash
+DATABASE_URL="postgresql://<utilizador>:<password>@localhost:5432/food_pairing"
+DIRECT_URL="postgresql://<utilizador>:<password>@localhost:5432/food_pairing"
+```
+
+Cria a base de dados antes de migrar: `createdb food_pairing` (ou `CREATE
+DATABASE food_pairing;` no `psql`). As extensões `unaccent` e `pg_trgm` são
+criadas automaticamente pela primeira migration.
+
+**Opção B — Supabase (o que o deploy usa):**
+
 | Variável | Onde obter |
 |---|---|
 | `DATABASE_URL` | Supabase › Project Settings › Database › Connection pooling (porta 6543) |
@@ -57,19 +70,24 @@ cp .env.example .env
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase › Project Settings › API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase › Project Settings › API |
 | `SUPABASE_SERVICE_ROLE_KEY` | O mesmo sítio. **Só no servidor** — nunca com prefixo `NEXT_PUBLIC_`. |
-| `ANTHROPIC_API_KEY` | console.anthropic.com › API Keys |
 
-Cria o esquema na base de dados e arranca:
+Em qualquer dos casos, preenche também:
+
+| Variável | Onde obter |
+|---|---|
+| `ANTHROPIC_API_KEY` | console.anthropic.com › API Keys. Sem isto, tudo corre exceto a leitura de fotos e o enriquecimento por IA. |
+
+Cria o esquema, semeia um restaurante de demonstração e arranca:
 
 ```bash
 npm run db:migrate
-```
-
-```bash
+npm run db:seed
 npm run dev
 ```
 
-Fica em http://localhost:3000.
+Fica em http://localhost:3000. O seed cria o restaurante "Tasca do Demo" com
+6 mesas — usa `/backoffice` para carregar pratos e vinhos antes de testar a
+sala.
 
 ### Comandos
 
@@ -97,20 +115,44 @@ corre `prisma generate` automaticamente através do `postinstall`.
 ## Estrutura
 
 ```
-app/                 Rotas: sala, cozinha, backoffice
+app/
+  sala/              Comanda por mesa: autocomplete, sugestão, envio à cozinha
+  cozinha/           KDS — polling a cada 4s, com fallback se o Realtime cair
+  backoffice/        Upload de fotos, revisão, "Adicionar referência", perguntas
+  api/                Rotas que ligam as páginas à camada de dados e de IA
 lib/
   prisma.ts          Cliente Prisma (singleton)
+  restaurante.ts      Restaurante atual — fixo no "demo" até haver login
+  pesquisaPratos.ts  Autocomplete insensível a acentos (unaccent + pg_trgm)
   sugestao.ts        Motor de sugestão à mesa — só consulta, sem IA
+  orquestracao.ts    Liga extração → enriquecimento → pairing
+  uploads.ts         Guarda as fotos carregadas (Supabase Storage em produção)
   ia/
     cliente.ts       Cliente Claude e modelo usado
     esquemas.ts      Schemas Zod dos structured outputs
     extracao.ts      Foto da carta → itens, para revisão
     enriquecimento.ts Análise de pratos, pesquisa de vinhos, perguntas
+    respostas.ts     Traduz a resposta do gerente numa alteração à ficha
     pairing.ts       Geração da matriz prato × vinho
-prisma/schema.prisma Modelo de dados
+prisma/
+  schema.prisma      Modelo de dados
+  seed.ts            Restaurante de demonstração com 6 mesas
 ```
 
 ## Estado
 
-Fundação assente: modelo de dados, camada de IA e motor de sugestão. As
-interfaces de sala, cozinha e backoffice são o passo seguinte.
+Fluxo ponta a ponta a funcionar: carregar pratos e vinhos no backoffice
+(foto ou manual), pedir à mesa com autocomplete e sugestão de vinho, enviar
+para a cozinha e avançar o estado do pedido. Testado localmente.
+
+Por fazer antes de um piloto real:
+
+- **Login por PIN** (ARQUITETURA.md §3.5) — a app está fixa a um único
+  restaurante de demonstração, sem autenticação.
+- **Supabase Storage** para as fotos carregadas — hoje ficam em disco local
+  (`/uploads`, fora do git).
+- **Supabase Realtime** no KDS — o polling a cada 4s funciona, mas um canal
+  Realtime dava latência menor.
+- Ligar a um projeto Anthropic com `ANTHROPIC_API_KEY` real para testar a
+  ingestão por foto e o enriquecimento — sem chave, tudo o resto funciona e o
+  erro fica isolado a essa chamada.

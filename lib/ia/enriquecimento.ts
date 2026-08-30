@@ -144,6 +144,10 @@ export async function investigarVinho(vinho: {
 
 const PERGUNTAS_POR_CAMPO: Record<string, { pergunta: string; opcoes: string[] }> =
   {
+    tipo: {
+      pergunta: "é tinto, branco, rosé, espumante, fortificado ou laranja?",
+      opcoes: ["Tinto", "Branco", "Rosé", "Espumante", "Fortificado", "Laranja"],
+    },
     estagioBarrica: {
       pergunta: "estagiou em madeira?",
       opcoes: ["Sim", "Não", "Não sei"],

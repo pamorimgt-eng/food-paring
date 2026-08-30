@@ -23,15 +23,28 @@ Regras:
 - Se a foto estiver cortada, tremida ou com reflexos, di-lo em "avisos".
 `.trim();
 
-function blocoImagem(imagemUrl: string) {
+export type ImagemMediaType =
+  | "image/jpeg"
+  | "image/png"
+  | "image/webp"
+  | "image/gif";
+
+export type ImagemFonte = { base64: string; mediaType: ImagemMediaType };
+
+/**
+ * Base64, não URL: as fotos vêm de upload direto (telemóvel/tablet do
+ * restaurante), nunca de um endereço público que os servidores do Claude
+ * pudessem ir buscar. Um `localhost` nunca funcionaria aqui.
+ */
+function blocoImagem({ base64, mediaType }: ImagemFonte) {
   return {
     type: "image" as const,
-    source: { type: "url" as const, url: imagemUrl },
+    source: { type: "base64" as const, media_type: mediaType, data: base64 },
   };
 }
 
 /** Lê uma foto do menu e devolve os pratos, para revisão humana. */
-export async function extrairMenu(imagemUrl: string): Promise<TMenuExtraido> {
+export async function extrairMenu(imagem: ImagemFonte): Promise<TMenuExtraido> {
   const resposta = await claude.messages.parse({
     model: MODELO,
     max_tokens: 16000,
@@ -44,7 +57,7 @@ export async function extrairMenu(imagemUrl: string): Promise<TMenuExtraido> {
       {
         role: "user",
         content: [
-          blocoImagem(imagemUrl),
+          blocoImagem(imagem),
           {
             type: "text",
             text: "Extrai todos os pratos desta carta, com secção e preço.",
@@ -62,7 +75,7 @@ export async function extrairMenu(imagemUrl: string): Promise<TMenuExtraido> {
 
 /** Lê uma foto da carta de vinhos. A ficha técnica vem depois, no enriquecimento. */
 export async function extrairCartaVinhos(
-  imagemUrl: string,
+  imagem: ImagemFonte,
 ): Promise<TCartaVinhosExtraida> {
   const resposta = await claude.messages.parse({
     model: MODELO,
@@ -76,7 +89,7 @@ export async function extrairCartaVinhos(
       {
         role: "user",
         content: [
-          blocoImagem(imagemUrl),
+          blocoImagem(imagem),
           {
             type: "text",
             text:

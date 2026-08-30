@@ -210,7 +210,9 @@ model VinhoCatalogo {
   regiao   String?
   pais     String?
   castas   String[]
-  tipo     TipoVinho
+  /// Nulo até ao enriquecimento: uma foto da carta não diz se é tinto ou
+  /// branco com fiabilidade suficiente — só a pesquisa web confirma.
+  tipo     TipoVinho?
 
   /// Corpo, acidez, taninos, estágio em barrica, teor alcoólico, perfil
   /// aromático. Vem da pesquisa web, em jsonb para evoluir livremente.

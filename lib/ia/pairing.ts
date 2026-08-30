@@ -14,7 +14,7 @@ export type VinhoParaPairing = {
   ano?: number | null;
   regiao?: string | null;
   castas: string[];
-  tipo: string;
+  tipo: string | null;
   atributos: unknown;
   preco: number;
 };

@@ -46,3 +46,6 @@ next-env.d.ts
 # Uploads locais de teste (fotos de menus/cartas)
 /uploads/
 /tmp/
+
+# Claude Code — permissões locais desta sessão, não partilhadas
+.claude/settings.local.json
