@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Tinto escuro — a cor do produto. */
+  /* Tinto escuro — a cor do produto (usada na app operacional: sala/cozinha/backoffice). */
   --color-vinho-50: #fdf3f4;
   --color-vinho-100: #fbe6e8;
   --color-vinho-200: #f6d0d5;
@@ -13,6 +13,21 @@
   --color-vinho-800: #7a1e37;
   --color-vinho-900: #5c1a2c;
   --color-vinho-950: #380a17;
+
+  /* Branding do site de marketing: vermelho #c1283b, preto, creme. */
+  --color-marca-50: #fdf1f2;
+  --color-marca-100: #fbdfe2;
+  --color-marca-200: #f5b8bf;
+  --color-marca-300: #ec8d99;
+  --color-marca-400: #dc5666;
+  --color-marca-500: #c1283b;
+  --color-marca-600: #a72032;
+  --color-marca-700: #861a29;
+  --color-marca-800: #63141f;
+  --color-marca-900: #3d0d14;
+  --color-marca-creme: #f1f3e0;
+  --color-marca-creme-escuro: #e2e5c9;
+  --color-marca-preto: #000000;
 }
 
 :root {
