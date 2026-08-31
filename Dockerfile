@@ -5,7 +5,11 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# --ignore-scripts: o postinstall corre "prisma generate", mas o schema só é
+# copiado no estágio "builder" — sem isto, o install falhava aqui por não
+# encontrar prisma/schema.prisma. O "builder" já corre prisma generate
+# explicitamente depois de copiar o código todo.
+RUN npm ci --ignore-scripts
 
 # ---- build ----------------------------------------------------------------
 FROM node:20-alpine AS builder
