@@ -1,4 +1,11 @@
 # Imagem para deploy em VPS via Easypanel. Ver README.md > Deploy.
+#
+# Não usa o output "standalone" do Next.js de propósito: copiar só os
+# ficheiros que o tracer de dependências apanha partiu duas vezes com o
+# Prisma (o motor nativo e, depois, uma dependência transitiva nova do CLI —
+# "effect" — que o tracer nunca ia adivinhar). Levar o node_modules completo
+# para a imagem final é maior, mas para de partir a cada atualização do
+# Prisma.
 
 # ---- dependências --------------------------------------------------------
 FROM node:20-alpine AS deps
@@ -31,16 +38,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# O tracer de dependências do Next não apanha o motor do Prisma (binário
-# nativo, carregado em runtime, não importado estaticamente) — copiado à parte.
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/prisma ./prisma
+RUN chown -R nextjs:nodejs /app/.next
 
 # As fotos carregadas ficam aqui — monta um volume persistente do Easypanel
 # neste caminho, ou perdem-se a cada deploy.
@@ -53,4 +56,4 @@ ENV HOSTNAME="0.0.0.0"
 
 # Aplica migrations pendentes antes de arrancar — idempotente, seguro em
 # cada deploy.
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
