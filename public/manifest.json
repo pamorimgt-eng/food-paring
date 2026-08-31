@@ -1,0 +1,10 @@
+{
+  "name": "Comanda Digital",
+  "short_name": "Comanda",
+  "description": "Comanda digital com sugestão automática de vinhos.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#7a1e37",
+  "icons": []
+}
