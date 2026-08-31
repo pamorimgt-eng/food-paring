@@ -54,6 +54,8 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Aplica migrations pendentes antes de arrancar — idempotente, seguro em
-# cada deploy.
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
+# Migrations e seed correm sozinhos no arranque — ambos idempotentes
+# (upsert no seed), seguros de repetir em cada deploy. O seed garante que o
+# restaurante de demonstração e os PINs de acesso existem mesmo numa base de
+# dados nova (ex: primeiro deploy num VPS).
+CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx prisma/seed.ts && npm run start"]

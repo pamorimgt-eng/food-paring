@@ -77,8 +77,16 @@ npm run dev
 ```
 
 Fica em http://localhost:3000. O seed cria o restaurante "Tasca do Demo" com
-6 mesas — usa `/backoffice` para carregar pratos e vinhos antes de testar a
-sala.
+6 mesas e três funcionários para entrar por PIN:
+
+| Área | PIN |
+|---|---|
+| Backoffice | `1234` |
+| Sala | `1111` |
+| Cozinha | `2222` |
+
+Usa o PIN do Backoffice primeiro para carregar pratos e vinhos antes de
+testar a sala.
 
 ### Comandos
 
@@ -93,8 +101,8 @@ sala.
 ## Deploy
 
 VPS com [Easypanel](https://easypanel.io) já instalado. A app corre em Docker
-(`Dockerfile` na raiz, build multi-stage com output `standalone` do Next.js);
-o Postgres corre como serviço à parte no mesmo servidor.
+(`Dockerfile` na raiz, build multi-stage); o Postgres corre como serviço à
+parte no mesmo servidor.
 
 ### 1. Base de dados
 
@@ -116,6 +124,7 @@ Em **Environment**, define:
 | `DATABASE_URL` | A connection string do passo 1 |
 | `DIRECT_URL` | A mesma string (não há pooler neste setup) |
 | `ANTHROPIC_API_KEY` | A tua chave — console.anthropic.com › API Keys |
+| `SESSAO_SEGREDO` | Um texto aleatório e longo — assina a sessão de login. Sem isto, usa um valor por omissão inseguro. |
 
 Em **Mounts** (ou "Volumes"), adiciona um volume persistente em `/app/uploads`
 — sem isto, as fotos carregadas desaparecem a cada novo deploy.
@@ -125,9 +134,10 @@ IP do servidor na porta que expuseres (mapeia a porta do container, `3000`,
 para uma porta do host em **Advanced**). Quando houveres um domínio, o
 Easypanel trata do SSL automaticamente via Let's Encrypt.
 
-Faz **Deploy**. As migrations correm sozinhas no arranque do container
-(`prisma migrate deploy`, dentro do `CMD` do Dockerfile) — não é preciso
-correr nada à mão.
+Faz **Deploy**. As migrations e o seed correm sozinhos no arranque do
+container (dentro do `CMD` do Dockerfile) — a primeira vez que a app arranca
+numa base de dados nova, já fica com o restaurante de demonstração e os
+PINs de acesso (ver tabela acima). Não é preciso correr nada à mão.
 
 > `ANTHROPIC_API_KEY` nunca deve ter o prefixo `NEXT_PUBLIC_` — isso
 > exporia a chave no browser. As variáveis acima já estão corretas assim.
@@ -141,13 +151,15 @@ nas definições do serviço, ou clica **Deploy** manualmente depois de um push.
 
 ```
 app/
-  sala/              Comanda por mesa: autocomplete, sugestão, envio à cozinha
+  login/             PIN de 4 dígitos, manda para a área certa por papel
+  sala/              Comanda por mesa: autocomplete, edição, notas, sugestão
   cozinha/           KDS — polling a cada 4s, com fallback se o Realtime cair
-  backoffice/        Upload de fotos, revisão, "Adicionar referência", perguntas
+  backoffice/        Menu, carta, perguntas, gestão de funcionários (PINs)
   api/                Rotas que ligam as páginas à camada de dados e de IA
 lib/
   prisma.ts          Cliente Prisma (singleton)
-  restaurante.ts      Restaurante atual — fixo no "demo" até haver login
+  auth.ts            Sessão por PIN — hash, cookie, exigirPapel()
+  restaurante.ts      Restaurante atual — fixo no "demo", multi-tenant é futuro
   pesquisaPratos.ts  Autocomplete insensível a acentos (unaccent + pg_trgm)
   sugestao.ts        Motor de sugestão à mesa — só consulta, sem IA
   orquestracao.ts    Liga extração → enriquecimento → pairing
@@ -160,21 +172,27 @@ lib/
     enriquecimento.ts Análise de pratos, pesquisa de vinhos, perguntas
     respostas.ts     Traduz a resposta do gerente numa alteração à ficha
     pairing.ts       Geração da matriz prato × vinho
+components/
+  BotaoSair.tsx      Termina a sessão, comum às três áreas
 prisma/
   schema.prisma      Modelo de dados
-  seed.ts            Restaurante de demonstração com 6 mesas
+  seed.ts            Restaurante de demonstração, mesas e PINs
 ```
 
 ## Estado
 
-Fluxo ponta a ponta a funcionar: carregar pratos e vinhos no backoffice
-(foto ou manual), pedir à mesa com autocomplete e sugestão de vinho, enviar
-para a cozinha e avançar o estado do pedido. Testado localmente.
+Fluxo ponta a ponta a funcionar: login por PIN, carregar pratos e vinhos no
+backoffice (foto ou manual), pedir à mesa com autocomplete, editar
+quantidade/pedidos especiais, sugestão de vinho, enviar para a cozinha e
+avançar o estado do pedido. Em produção num VPS via Easypanel.
 
-Por fazer antes de um piloto real:
+Por fazer antes de um piloto com clientes reais:
 
-- **Login por PIN** (ARQUITETURA.md §3.5) — a app está fixa a um único
-  restaurante de demonstração, sem autenticação.
+- **Multi-tenant** — a app está fixa a um único restaurante ("demo"); um
+  segundo restaurante precisaria do próprio registo, hoje inexistente.
+- **Segurança do login** — HMAC com segredo de servidor chega para uma
+  equipa de confiança em alfa, mas antes de dados de clientes reais merece
+  bcrypt/argon2 e uma sessão assinada em vez de um id em claro na cookie.
 - **Backups da base de dados** — self-hosted significa que os backups são
   responsabilidade nossa. O Easypanel tem a opção de backups automáticos do
   serviço Postgres; vale a pena ativar antes de dados reais entrarem.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { BotaoSair } from "@/components/BotaoSair";
 
 type ItemPedido = { id: string; nome: string; quantidade: number; notas: string | null; estado: string };
 type Pedido = { id: string; estado: string; mesa: string; criadoEm: string; itens: ItemPedido[] };
@@ -18,7 +19,13 @@ const ROTULO_ESTADO: Record<string, string> = {
  */
 const INTERVALO_MS = 4000;
 
-export function CozinhaEcra({ restauranteId }: { restauranteId: string }) {
+export function CozinhaEcra({
+  restauranteId,
+  nomeUtilizador,
+}: {
+  restauranteId: string;
+  nomeUtilizador: string;
+}) {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [ligado, setLigado] = useState(true);
 
@@ -63,9 +70,12 @@ export function CozinhaEcra({ restauranteId }: { restauranteId: string }) {
     <main className="mx-auto min-h-full max-w-6xl px-6 py-8">
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Cozinha</h1>
-        {!ligado && (
-          <span className="text-sm text-amber-600">A tentar reconectar…</span>
-        )}
+        <div className="flex items-center gap-3">
+          {!ligado && (
+            <span className="text-sm text-amber-600">A tentar reconectar…</span>
+          )}
+          <BotaoSair nome={nomeUtilizador} />
+        </div>
       </header>
 
       {pedidos.length === 0 ? (

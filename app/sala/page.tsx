@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getRestauranteAtual } from "@/lib/restaurante";
 import { prisma } from "@/lib/prisma";
+import { exigirPapel } from "@/lib/auth";
+import { BotaoSair } from "@/components/BotaoSair";
 
 // A ocupação das mesas muda a cada pedido — teria de ser dinâmica de qualquer
 // forma; sem isto o Next gerava a página uma vez, no build, e ficava presa
@@ -8,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function SalaPage() {
+  const utilizador = await exigirPapel(["SALA", "ADMIN"]);
   const restaurante = await getRestauranteAtual();
   const mesas = await prisma.mesa.findMany({
     where: { restauranteId: restaurante.id },
@@ -17,11 +20,14 @@ export default async function SalaPage() {
 
   return (
     <main className="mx-auto min-h-full max-w-md px-6 py-10">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold">Sala</h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Escolhe a mesa para registar o pedido.
-        </p>
+      <header className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Sala</h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Escolhe a mesa para registar o pedido.
+          </p>
+        </div>
+        <BotaoSair nome={utilizador.nome} />
       </header>
 
       <div className="grid grid-cols-3 gap-3">

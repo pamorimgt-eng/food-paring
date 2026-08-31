@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { getRestauranteAtual } from "@/lib/restaurante";
 import { prisma } from "@/lib/prisma";
+import { exigirPapel } from "@/lib/auth";
+import { BotaoSair } from "@/components/BotaoSair";
 
 export const dynamic = "force-dynamic";
 
 export default async function BackofficePage() {
+  const utilizador = await exigirPapel(["ADMIN"]);
   const restaurante = await getRestauranteAtual();
-  const [pratos, vinhos, perguntasAbertas] = await Promise.all([
+  const [pratos, vinhos, perguntasAbertas, funcionarios] = await Promise.all([
     prisma.prato.count({ where: { restauranteId: restaurante.id } }),
     prisma.cartaVinho.count({ where: { restauranteId: restaurante.id } }),
     prisma.pergunta.count({ where: { restauranteId: restaurante.id, estado: "ABERTA" } }),
+    prisma.utilizador.count({ where: { restauranteId: restaurante.id } }),
   ]);
 
   const CARTOES = [
@@ -22,18 +26,22 @@ export default async function BackofficePage() {
       unidade: "por responder",
       destaque: perguntasAbertas > 0,
     },
+    { href: "/backoffice/funcionarios", titulo: "Funcionários", valor: funcionarios, unidade: "com acesso" },
   ];
 
   return (
     <main className="mx-auto min-h-full max-w-2xl px-6 py-10">
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold">Backoffice — {restaurante.nome}</h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Carrega o menu e a carta, e responde às perguntas que a IA não conseguiu resolver sozinha.
-        </p>
+      <header className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Backoffice — {restaurante.nome}</h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Carrega o menu e a carta, e responde às perguntas que a IA não conseguiu resolver sozinha.
+          </p>
+        </div>
+        <BotaoSair nome={utilizador.nome} />
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {CARTOES.map((c) => (
           <Link
             key={c.href}

@@ -1,6 +1,7 @@
 import { getRestauranteAtual } from "@/lib/restaurante";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { exigirPapel } from "@/lib/auth";
 import { ComandaMesa } from "./ComandaMesa";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,7 @@ export default async function MesaPage({
 }: {
   params: Promise<{ mesaId: string }>;
 }) {
+  const utilizador = await exigirPapel(["SALA", "ADMIN"]);
   const { mesaId } = await params;
   const restaurante = await getRestauranteAtual();
   const mesa = await prisma.mesa.findFirst({
@@ -18,6 +20,11 @@ export default async function MesaPage({
   if (!mesa) notFound();
 
   return (
-    <ComandaMesa restauranteId={restaurante.id} mesaId={mesa.id} numeroMesa={mesa.numero} />
+    <ComandaMesa
+      restauranteId={restaurante.id}
+      mesaId={mesa.id}
+      numeroMesa={mesa.numero}
+      utilizadorId={utilizador.id}
+    />
   );
 }

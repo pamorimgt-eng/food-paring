@@ -22,14 +22,26 @@ const NOME_BANDA: Record<Sugestao["banda"], string> = {
   PREMIUM: "Premium",
 };
 
+/** Pedidos especiais mais comuns — um toque em vez de escrever sempre o mesmo. */
+const NOTAS_RAPIDAS = [
+  "Sem batata frita",
+  "Sem cebola",
+  "Sem glúten",
+  "Bem passado",
+  "Mal passado",
+  "Molho à parte",
+];
+
 export function ComandaMesa({
   restauranteId,
   mesaId,
   numeroMesa,
+  utilizadorId,
 }: {
   restauranteId: string;
   mesaId: string;
   numeroMesa: string;
+  utilizadorId: string;
 }) {
   const router = useRouter();
   const [pedidoId, setPedidoId] = useState<string | null>(null);
@@ -41,13 +53,17 @@ export function ComandaMesa({
   const [aCarregarSugestao, setACarregarSugestao] = useState(false);
   const [aEnviar, setAEnviar] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [itemNotaAberta, setItemNotaAberta] = useState<string | null>(null);
+  const [notaRascunho, setNotaRascunho] = useState("");
 
   const carregarPedido = useCallback(async () => {
-    const resp = await fetch(`/api/pedidos/mesa/${mesaId}?restauranteId=${restauranteId}`);
+    const resp = await fetch(
+      `/api/pedidos/mesa/${mesaId}?restauranteId=${restauranteId}&utilizadorId=${utilizadorId}`,
+    );
     const dados = await resp.json();
     setPedidoId(dados.pedido.id);
     setItens(dados.pedido.itens);
-  }, [mesaId, restauranteId]);
+  }, [mesaId, restauranteId, utilizadorId]);
 
   useEffect(() => {
     carregarPedido();
@@ -101,8 +117,39 @@ export function ComandaMesa({
   }
 
   async function removerItem(itemId: string) {
+    setItens((atual) => atual.filter((i) => i.id !== itemId));
     await fetch(`/api/pedidos/${pedidoId}/itens/${itemId}`, { method: "DELETE" });
-    await carregarPedido();
+  }
+
+  /** Otimista: o botão reage já, a chamada à API confirma em segundo plano. */
+  async function alterarQuantidade(itemId: string, delta: number) {
+    const atual = itens.find((i) => i.id === itemId);
+    if (!atual) return;
+    const quantidade = atual.quantidade + delta;
+    if (quantidade < 1) return removerItem(itemId);
+
+    setItens((lista) => lista.map((i) => (i.id === itemId ? { ...i, quantidade } : i)));
+    await fetch(`/api/pedidos/${pedidoId}/itens/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quantidade }),
+    });
+  }
+
+  function abrirNota(item: Item) {
+    setItemNotaAberta(item.id);
+    setNotaRascunho(item.notas ?? "");
+  }
+
+  async function guardarNota(itemId: string, notas: string) {
+    const valor = notas.trim() || null;
+    setItens((lista) => lista.map((i) => (i.id === itemId ? { ...i, notas: valor } : i)));
+    setItemNotaAberta(null);
+    await fetch(`/api/pedidos/${pedidoId}/itens/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notas: valor }),
+    });
   }
 
   async function enviarParaCozinha() {
@@ -178,20 +225,87 @@ export function ComandaMesa({
         ) : (
           <ul className="divide-y divide-slate-200 dark:divide-slate-800">
             {itens.map((item) => (
-              <li key={item.id} className="flex items-center justify-between py-2.5">
-                <div>
-                  <p className="font-medium">
-                    {item.quantidade}× {item.nome}
-                  </p>
-                  <p className="text-xs text-slate-500">{item.preco.toFixed(2)} €</p>
+              <li key={item.id} className="py-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{item.nome}</p>
+                    <p className="text-xs text-slate-500">{item.preco.toFixed(2)} € cada</p>
+                    {item.notas && itemNotaAberta !== item.id && (
+                      <p className="mt-0.5 text-xs italic text-vinho-700 dark:text-vinho-300">
+                        {item.notas}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <button
+                      onClick={() => alterarQuantidade(item.id, -1)}
+                      className="toque w-9 text-lg text-slate-600 hover:text-vinho-700 dark:text-slate-300"
+                      aria-label="Diminuir quantidade"
+                    >
+                      −
+                    </button>
+                    <span className="w-5 text-center font-medium tabular-nums">
+                      {item.quantidade}
+                    </span>
+                    <button
+                      onClick={() => alterarQuantidade(item.id, 1)}
+                      className="toque w-9 text-lg text-slate-600 hover:text-vinho-700 dark:text-slate-300"
+                      aria-label="Aumentar quantidade"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => (itemNotaAberta === item.id ? setItemNotaAberta(null) : abrirNota(item))}
+                    className={`toque px-2 text-sm ${
+                      item.notas ? "text-vinho-700 dark:text-vinho-300" : "text-slate-400 hover:text-vinho-700"
+                    }`}
+                    aria-label="Pedido especial"
+                    title="Pedido especial (ex: sem batata frita)"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    onClick={() => removerItem(item.id)}
+                    className="toque px-1 text-sm text-slate-400 hover:text-red-600"
+                    aria-label="Remover"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <button
-                  onClick={() => removerItem(item.id)}
-                  className="toque px-2 text-sm text-slate-400 hover:text-vinho-700"
-                  aria-label="Remover"
-                >
-                  ✕
-                </button>
+
+                {itemNotaAberta === item.id && (
+                  <div className="mt-2 rounded-lg bg-slate-50 p-3 dark:bg-slate-900">
+                    <div className="mb-2 flex flex-wrap gap-1.5">
+                      {NOTAS_RAPIDAS.map((nota) => (
+                        <button
+                          key={nota}
+                          onClick={() => setNotaRascunho((atual) => (atual ? `${atual}, ${nota}` : nota))}
+                          className="rounded-full border border-slate-300 px-2.5 py-1 text-xs hover:border-vinho-700 hover:text-vinho-700 dark:border-slate-600"
+                        >
+                          {nota}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        value={notaRascunho}
+                        onChange={(e) => setNotaRascunho(e.target.value)}
+                        placeholder="Pedido especial…"
+                        className="toque flex-1 rounded-lg border border-slate-300 px-3 text-sm dark:border-slate-700 dark:bg-slate-950"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => guardarNota(item.id, notaRascunho)}
+                        className="toque rounded-lg bg-vinho-700 px-4 text-sm font-medium text-white hover:bg-vinho-800"
+                      >
+                        Guardar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

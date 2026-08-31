@@ -13,6 +13,7 @@ export async function GET(
   const { mesaId } = await params;
   const { searchParams } = new URL(request.url);
   const restauranteId = searchParams.get("restauranteId");
+  const utilizadorId = searchParams.get("utilizadorId");
   if (!restauranteId) {
     return NextResponse.json({ erro: "Falta restauranteId." }, { status: 400 });
   }
@@ -24,7 +25,7 @@ export async function GET(
 
   if (!pedido) {
     pedido = await prisma.pedido.create({
-      data: { restauranteId, mesaId, estado: "ABERTO" },
+      data: { restauranteId, mesaId, estado: "ABERTO", utilizadorId },
       include: { itens: { include: { prato: true } }, mesa: true },
     });
   }
