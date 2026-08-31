@@ -48,8 +48,25 @@ export async function getUtilizadorAtual() {
   return prisma.utilizador.findUnique({ where: { id } });
 }
 
+/**
+ * Desliga a exigência de PIN sem tirar o código do sítio — só para o
+ * período de teste em que entrar com código está a atrapalhar mais do que
+ * ajudar. Voltar a exigir login é mudar isto para "false" (ou remover a
+ * variável de ambiente), nada mais.
+ */
+const LOGIN_DESATIVADO = process.env.DESATIVAR_LOGIN === "true";
+
 /** Usa no topo de uma página de servidor. Manda para /login se não servir. */
 export async function exigirPapel(papeis: Papel[]) {
+  if (LOGIN_DESATIVADO) {
+    const substituto = await prisma.utilizador.findFirst({
+      where: { papel: { in: papeis } },
+      orderBy: { criadoEm: "asc" },
+    });
+    if (substituto) return substituto;
+    // Sem nenhum funcionário com este papel ainda — cai para o fluxo normal.
+  }
+
   const utilizador = await getUtilizadorAtual();
   if (!utilizador || !papeis.includes(utilizador.papel)) {
     redirect("/login");
