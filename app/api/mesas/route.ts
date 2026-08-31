@@ -14,7 +14,8 @@ export async function GET(request: Request) {
     orderBy: { numero: "asc" },
     include: {
       pedidos: {
-        where: { estado: { not: "FECHADO" } },
+        // Um pedido sem itens não deve marcar a mesa como ocupada.
+        where: { estado: { not: "FECHADO" }, itens: { some: {} } },
         select: { id: true, estado: true },
       },
     },

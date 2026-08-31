@@ -15,7 +15,14 @@ export default async function SalaPage() {
   const mesas = await prisma.mesa.findMany({
     where: { restauranteId: restaurante.id },
     orderBy: { numero: "asc" },
-    include: { pedidos: { where: { estado: { not: "FECHADO" } }, select: { id: true } } },
+    // Um pedido ABERTO sem itens (mesa aberta, ainda nada pedido, ou tudo
+    // removido) não deve marcar a mesa como ocupada — só atrapalharia.
+    include: {
+      pedidos: {
+        where: { estado: { not: "FECHADO" }, itens: { some: {} } },
+        select: { id: true },
+      },
+    },
   });
 
   return (
