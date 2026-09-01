@@ -74,7 +74,7 @@ export function PerguntasBackoffice({
                         className={`toque rounded-lg border px-4 text-sm font-medium disabled:opacity-40 ${
                           opcao.toLowerCase().includes("não sei")
                             ? "border-slate-300 text-slate-500 dark:border-slate-700"
-                            : "border-vinho-700 text-vinho-700 hover:bg-vinho-50 dark:hover:bg-vinho-950/30"
+                            : "border-marca-500 text-marca-500 hover:bg-marca-50 dark:hover:bg-marca-800/30"
                         }`}
                       >
                         {opcao}
@@ -94,7 +94,7 @@ export function PerguntasBackoffice({
                     <button
                       onClick={() => responder(p.id, textoLivre[p.id] ?? "")}
                       disabled={aResponder === p.id || !textoLivre[p.id]?.trim()}
-                      className="toque rounded-lg bg-vinho-700 px-4 text-sm font-medium text-white disabled:opacity-40"
+                      className="toque rounded-lg bg-marca-500 px-4 text-sm font-medium text-white disabled:opacity-40"
                     >
                       Guardar
                     </button>

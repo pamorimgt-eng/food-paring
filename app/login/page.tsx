@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 
 const DESTINO_POR_PAPEL: Record<string, string> = {
   ADMIN: "/backoffice",
@@ -61,7 +62,7 @@ export default function LoginPage() {
             key={i}
             className={`h-3.5 w-3.5 rounded-full border-2 ${
               i < pin.length
-                ? "border-vinho-700 bg-vinho-700"
+                ? "border-marca-500 bg-marca-500"
                 : "border-slate-300 dark:border-slate-600"
             }`}
           />
@@ -98,6 +99,13 @@ export default function LoginPage() {
           ⌫
         </button>
       </div>
+
+      <Link
+        href="/login/email"
+        className="toque mt-8 flex items-center justify-center text-sm text-slate-400 hover:text-marca-500"
+      >
+        Sou administrador — entrar com email
+      </Link>
     </main>
   );
 }

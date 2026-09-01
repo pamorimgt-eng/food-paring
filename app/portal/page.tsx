@@ -39,7 +39,7 @@ export default async function PortalPage() {
             <Link
               key={href}
               href={href}
-              className="toque rounded-xl border border-slate-200 px-5 py-4 transition-colors hover:border-vinho-700 hover:bg-vinho-50 dark:border-slate-800 dark:hover:border-vinho-500 dark:hover:bg-slate-900"
+              className="toque rounded-xl border border-slate-200 px-5 py-4 transition-colors hover:border-marca-500 hover:bg-marca-50 dark:border-slate-800 dark:hover:border-marca-400 dark:hover:bg-slate-900"
             >
               <span className="block font-medium">{titulo}</span>
               <span className="mt-0.5 block text-sm text-slate-600 dark:text-slate-400">

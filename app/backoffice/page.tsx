@@ -46,7 +46,7 @@ export default async function BackofficePage() {
           <Link
             key={c.href}
             href={c.href}
-            className={`rounded-xl border p-5 transition-colors hover:border-vinho-700 ${
+            className={`rounded-xl border p-5 transition-colors hover:border-marca-500 ${
               c.destaque
                 ? "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30"
                 : "border-slate-200 dark:border-slate-800"

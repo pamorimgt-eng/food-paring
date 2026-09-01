@@ -89,7 +89,7 @@ export function CozinhaEcra({
             >
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-lg font-semibold">Mesa {pedido.mesa}</span>
-                <span className="rounded-full bg-vinho-100 px-2.5 py-0.5 text-xs font-medium text-vinho-800 dark:bg-vinho-950 dark:text-vinho-200">
+                <span className="rounded-full bg-marca-50 px-2.5 py-0.5 text-xs font-medium text-marca-600 dark:bg-marca-800 dark:text-marca-100">
                   {ROTULO_ESTADO[pedido.estado] ?? pedido.estado}
                 </span>
               </div>
@@ -119,7 +119,7 @@ export function CozinhaEcra({
               {pedido.estado !== "PRONTO" && (
                 <button
                   onClick={() => avancarPedido(pedido.id, pedido.estado)}
-                  className="toque w-full rounded-lg bg-vinho-700 text-sm font-medium text-white hover:bg-vinho-800"
+                  className="toque w-full rounded-lg bg-marca-500 text-sm font-medium text-white hover:bg-marca-600"
                 >
                   {pedido.estado === "ENVIADO" ? "Iniciar preparação" : "Marcar entregue"}
                 </button>

@@ -200,7 +200,7 @@ export function ComandaMesa({
               <li key={p.id}>
                 <button
                   onClick={() => adicionarPrato(p)}
-                  className="toque flex w-full items-center justify-between px-4 py-2 text-left hover:bg-vinho-50 dark:hover:bg-slate-800"
+                  className="toque flex w-full items-center justify-between px-4 py-2 text-left hover:bg-marca-50 dark:hover:bg-slate-800"
                 >
                   <span>
                     {p.nome}
@@ -231,7 +231,7 @@ export function ComandaMesa({
                     <p className="truncate font-medium">{item.nome}</p>
                     <p className="text-xs text-slate-500">{item.preco.toFixed(2)} € cada</p>
                     {item.notas && itemNotaAberta !== item.id && (
-                      <p className="mt-0.5 text-xs italic text-vinho-700 dark:text-vinho-300">
+                      <p className="mt-0.5 text-xs italic text-marca-500 dark:text-marca-200">
                         {item.notas}
                       </p>
                     )}
@@ -240,7 +240,7 @@ export function ComandaMesa({
                   <div className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700">
                     <button
                       onClick={() => alterarQuantidade(item.id, -1)}
-                      className="toque w-9 text-lg text-slate-600 hover:text-vinho-700 dark:text-slate-300"
+                      className="toque w-9 text-lg text-slate-600 hover:text-marca-500 dark:text-slate-300"
                       aria-label="Diminuir quantidade"
                     >
                       −
@@ -250,7 +250,7 @@ export function ComandaMesa({
                     </span>
                     <button
                       onClick={() => alterarQuantidade(item.id, 1)}
-                      className="toque w-9 text-lg text-slate-600 hover:text-vinho-700 dark:text-slate-300"
+                      className="toque w-9 text-lg text-slate-600 hover:text-marca-500 dark:text-slate-300"
                       aria-label="Aumentar quantidade"
                     >
                       +
@@ -260,7 +260,7 @@ export function ComandaMesa({
                   <button
                     onClick={() => (itemNotaAberta === item.id ? setItemNotaAberta(null) : abrirNota(item))}
                     className={`toque px-2 text-sm ${
-                      item.notas ? "text-vinho-700 dark:text-vinho-300" : "text-slate-400 hover:text-vinho-700"
+                      item.notas ? "text-marca-500 dark:text-marca-200" : "text-slate-400 hover:text-marca-500"
                     }`}
                     aria-label="Pedido especial"
                     title="Pedido especial (ex: sem batata frita)"
@@ -283,7 +283,7 @@ export function ComandaMesa({
                         <button
                           key={nota}
                           onClick={() => setNotaRascunho((atual) => (atual ? `${atual}, ${nota}` : nota))}
-                          className="rounded-full border border-slate-300 px-2.5 py-1 text-xs hover:border-vinho-700 hover:text-vinho-700 dark:border-slate-600"
+                          className="rounded-full border border-slate-300 px-2.5 py-1 text-xs hover:border-marca-500 hover:text-marca-500 dark:border-slate-600"
                         >
                           {nota}
                         </button>
@@ -299,7 +299,7 @@ export function ComandaMesa({
                       />
                       <button
                         onClick={() => guardarNota(item.id, notaRascunho)}
-                        className="toque rounded-lg bg-vinho-700 px-4 text-sm font-medium text-white hover:bg-vinho-800"
+                        className="toque rounded-lg bg-marca-500 px-4 text-sm font-medium text-white hover:bg-marca-600"
                       >
                         Guardar
                       </button>
@@ -335,10 +335,10 @@ export function ComandaMesa({
             {sugestoes.map((s) => (
               <div
                 key={s.cartaVinhoId}
-                className="rounded-xl border border-vinho-200 bg-vinho-50 p-3 dark:border-vinho-900 dark:bg-vinho-950/30"
+                className="rounded-xl border border-marca-100 bg-marca-50 p-3 dark:border-marca-700 dark:bg-marca-800/30"
               >
                 <div className="flex items-baseline justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-vinho-700 dark:text-vinho-300">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-marca-500 dark:text-marca-200">
                     {NOME_BANDA[s.banda]}
                   </span>
                   <span className="text-sm font-medium">{s.preco.toFixed(2)} €</span>
@@ -365,7 +365,7 @@ export function ComandaMesa({
         <button
           onClick={enviarParaCozinha}
           disabled={itens.length === 0 || aEnviar}
-          className="toque mx-auto block w-full max-w-md rounded-lg bg-vinho-700 font-medium text-white transition-colors hover:bg-vinho-800 disabled:opacity-40"
+          className="toque mx-auto block w-full max-w-md rounded-lg bg-marca-500 font-medium text-white transition-colors hover:bg-marca-600 disabled:opacity-40"
         >
           {aEnviar ? "A enviar…" : "Enviar para a cozinha"}
         </button>

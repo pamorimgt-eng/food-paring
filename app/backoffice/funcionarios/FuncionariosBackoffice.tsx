@@ -95,7 +95,7 @@ export function FuncionariosBackoffice({
           <button
             onClick={adicionar}
             disabled={aGuardar}
-            className="toque rounded-lg bg-vinho-700 px-4 text-sm font-medium text-white hover:bg-vinho-800 disabled:opacity-50"
+            className="toque rounded-lg bg-marca-500 px-4 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-50"
           >
             {aGuardar ? "A guardar…" : "Adicionar"}
           </button>

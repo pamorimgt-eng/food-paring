@@ -159,7 +159,7 @@ export function PratosBackoffice({
             <button
               onClick={() => inputFicheiro.current?.click()}
               disabled={aCarregarFoto}
-              className="toque rounded-lg bg-vinho-700 px-4 text-sm font-medium text-white hover:bg-vinho-800 disabled:opacity-50"
+              className="toque rounded-lg bg-marca-500 px-4 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-50"
             >
               {aCarregarFoto ? "A ler a foto…" : "Carregar foto do menu"}
             </button>
@@ -194,7 +194,7 @@ export function PratosBackoffice({
               <button
                 onClick={adicionarManual}
                 disabled={aGuardarManual}
-                className="toque rounded-lg border border-vinho-700 text-sm font-medium text-vinho-700 hover:bg-vinho-50 disabled:opacity-50 dark:hover:bg-vinho-950/30"
+                className="toque rounded-lg border border-marca-500 text-sm font-medium text-marca-500 hover:bg-marca-50 disabled:opacity-50 dark:hover:bg-marca-800/30"
               >
                 {aGuardarManual ? "A guardar…" : "Adicionar referência"}
               </button>
@@ -204,7 +204,7 @@ export function PratosBackoffice({
       )}
 
       {revisao && (
-        <section className="mb-8 rounded-xl border border-vinho-200 p-5 dark:border-vinho-900">
+        <section className="mb-8 rounded-xl border border-marca-100 p-5 dark:border-marca-700">
           <h2 className="mb-1 font-medium">Confirma o que a IA leu</h2>
           <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
             Corrige o que estiver errado. Nada é gravado sem esta confirmação.
@@ -244,7 +244,7 @@ export function PratosBackoffice({
                 />
                 <button
                   onClick={() => removerLinha(i)}
-                  className="toque px-2 text-slate-400 hover:text-vinho-700"
+                  className="toque px-2 text-slate-400 hover:text-marca-500"
                   aria-label="Remover"
                 >
                   ✕
@@ -256,7 +256,7 @@ export function PratosBackoffice({
             <button
               onClick={confirmarRevisao}
               disabled={aConfirmar}
-              className="toque flex-1 rounded-lg bg-vinho-700 text-sm font-medium text-white hover:bg-vinho-800 disabled:opacity-50"
+              className="toque flex-1 rounded-lg bg-marca-500 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-50"
             >
               {aConfirmar ? "A gravar e a analisar…" : `Confirmar ${revisao.length} pratos`}
             </button>

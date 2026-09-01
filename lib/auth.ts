@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "./prisma";
@@ -22,6 +22,25 @@ export function calcularHashPin(pin: string): string {
 export function pinCorresponde(pin: string, hash: string): boolean {
   const calculado = Buffer.from(calcularHashPin(pin));
   const guardado = Buffer.from(hash);
+  return calculado.length === guardado.length && timingSafeEqual(calculado, guardado);
+}
+
+/**
+ * Password de conta de gestão — entropia bem maior que um PIN de 4 dígitos,
+ * por isso merece um hash lento e com salt (scrypt), não o HMAC simples do
+ * PIN. Formato guardado: "salt:hash", ambos em hex.
+ */
+export function calcularHashPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+export function passwordCorresponde(password: string, armazenado: string): boolean {
+  const [salt, hashGuardado] = armazenado.split(":");
+  if (!salt || !hashGuardado) return false;
+  const calculado = scryptSync(password, salt, 64);
+  const guardado = Buffer.from(hashGuardado, "hex");
   return calculado.length === guardado.length && timingSafeEqual(calculado, guardado);
 }
 

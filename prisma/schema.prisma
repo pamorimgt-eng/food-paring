@@ -118,9 +118,12 @@ model Utilizador {
   id            String  @id @default(uuid())
   restauranteId String  @map("restaurante_id")
   nome          String
-  email         String? // só o backoffice usa email; a sala entra por PIN
+  email         String? // dono/gerente entra por email+password; a sala entra por PIN
   /// PIN de 4 dígitos com hash. Login rápido para quem está a meio de turno.
   pinHash       String? @map("pin_hash")
+  /// Password com salt, formato "salt:hash" (scrypt) — ver lib/auth.ts.
+  /// Só contas de gestão (tipicamente ADMIN) costumam ter isto definido.
+  passwordHash  String? @map("password_hash")
   papel         Papel
 
   criadoEm    DateTime    @default(now()) @map("criado_em")

@@ -46,7 +46,7 @@ export default async function SalaPage() {
               href={`/sala/mesa/${mesa.id}`}
               className={`toque flex aspect-square flex-col items-center justify-center rounded-xl border text-lg font-semibold transition-colors ${
                 ocupada
-                  ? "border-vinho-700 bg-vinho-50 text-vinho-800 dark:border-vinho-500 dark:bg-vinho-950/40 dark:text-vinho-200"
+                  ? "border-marca-500 bg-marca-50 text-marca-600 dark:border-marca-400 dark:bg-marca-800/40 dark:text-marca-100"
                   : "border-slate-200 text-slate-700 hover:border-slate-400 dark:border-slate-800 dark:text-slate-300"
               }`}
             >
