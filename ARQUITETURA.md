@@ -1,4 +1,4 @@
-# Arquitetura — Comanda Digital com Wine Pairing por IA
+# Arquitetura — Mesa do Xico (comanda com wine pairing por IA)
 
 > Documento de decisões técnicas. O resumo do produto está em
 > [`ideia-comanda-digital-wine-pairing.md`](./ideia-comanda-digital-wine-pairing.md).

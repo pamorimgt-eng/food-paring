@@ -1,11 +1,11 @@
-# Comanda Digital com Wine Pairing
+# Mesa do Xico
 
 Comanda digital para restaurantes que substitui o papel e sugere o vinho certo
 para os pratos pedidos — com argumentos de venda prontos a dizer ao cliente,
 para que o empregado não precise de ser escanção.
 
-> **Nome do produto por definir.** O repositório e o `package.json` usam
-> `food-pairing` como nome provisório.
+> O repositório e o `package.json` continuam a usar `food-pairing` como nome
+> técnico interno — mudar isso não afeta nada visível ao utilizador.
 
 - **Ideia e contexto de negócio:** [`ideia-comanda-digital-wine-pairing.md`](./ideia-comanda-digital-wine-pairing.md)
 - **Decisões técnicas e modelo de dados:** [`ARQUITETURA.md`](./ARQUITETURA.md)

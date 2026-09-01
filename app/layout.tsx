@@ -2,19 +2,23 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Comanda Digital",
+  metadataBase: new URL("https://mesadoxico.pt"),
+  title: {
+    default: "Mesa do Xico",
+    template: "%s | Mesa do Xico",
+  },
   description:
     "Comanda digital para restaurantes com sugestão automática de vinhos e argumentos de venda.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Comanda",
+    title: "Mesa do Xico",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#7a1e37",
+  themeColor: "#c1283b",
   width: "device-width",
   initialScale: 1,
   // Usado em serviço, numa mão: evita zoom acidental ao tocar depressa.

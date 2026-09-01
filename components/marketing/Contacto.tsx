@@ -1,8 +1,5 @@
-/**
- * Sem backend de captação de leads ainda — o CTA abre o cliente de email.
- * O endereço abaixo é um placeholder: substitui por um real antes de publicar.
- */
-const EMAIL_CONTACTO = "contacto@comandadigital.pt";
+/** Sem backend de captação de leads ainda — o CTA abre o cliente de email. */
+const EMAIL_CONTACTO = "geral@xicosabido.pt";
 
 export function Contacto() {
   return (
@@ -19,7 +16,7 @@ export function Contacto() {
           para combinar uma demonstração à medida da sua carta.
         </p>
         <a
-          href={`mailto:${EMAIL_CONTACTO}?subject=${encodeURIComponent("Demonstração — Comanda Digital")}`}
+          href={`mailto:${EMAIL_CONTACTO}?subject=${encodeURIComponent("Demonstração — Mesa do Xico")}`}
           className="toque mt-8 inline-flex items-center rounded-lg bg-marca-500 px-6 text-base font-semibold text-white shadow-lg shadow-marca-500/30 transition-colors hover:bg-marca-600"
         >
           {EMAIL_CONTACTO}

@@ -25,7 +25,7 @@ export function Rodape() {
           <div>
             <p className="flex items-center gap-2 text-lg font-bold text-marca-preto">
               <span aria-hidden>🍷</span>
-              Comanda Digital
+              Mesa do Xico
             </p>
             <p className="mt-2 max-w-xs text-sm text-marca-preto/60">
               Comanda digital com sugestão automática de vinhos, feita para
@@ -50,7 +50,7 @@ export function Rodape() {
         </div>
 
         <div className="mt-10 border-t border-black/5 pt-6 text-xs text-marca-preto/40">
-          © {new Date().getFullYear()} Comanda Digital. Feito em Portugal 🇵🇹
+          © {new Date().getFullYear()} Mesa do Xico. Feito em Portugal 🇵🇹
         </div>
       </div>
     </footer>

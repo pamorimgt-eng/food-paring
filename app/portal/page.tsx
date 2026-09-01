@@ -29,7 +29,7 @@ export default async function PortalPage() {
     return (
       <main className="mx-auto flex min-h-full max-w-md flex-col justify-center gap-8 px-6 py-16">
         <header>
-          <h1 className="text-3xl font-semibold tracking-tight">Comanda Digital</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Mesa do Xico</h1>
           <p className="mt-2 text-slate-600 dark:text-slate-400">
             Pedidos sem papel, com o vinho certo sugerido na mesma mesa.
           </p>

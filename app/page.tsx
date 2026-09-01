@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Cabecalho } from "@/components/marketing/Cabecalho";
 import { Hero } from "@/components/marketing/Hero";
-import { Estatisticas } from "@/components/marketing/Estatisticas";
+import { Projecoes } from "@/components/marketing/Projecoes";
 import { Funcionalidade } from "@/components/marketing/Funcionalidade";
 import {
   VisualMenu,
@@ -17,7 +17,9 @@ import { Faq } from "@/components/marketing/Faq";
 import { Contacto } from "@/components/marketing/Contacto";
 import { Rodape } from "@/components/marketing/Rodape";
 
-const TITULO = "Comanda Digital | Comanda para restaurantes com sugestão automática de vinhos";
+// Título completo definido aqui, sem depender do template do layout raiz —
+// mais previsível do que confiar na propagação "%s | Mesa do Xico".
+const TITULO = "Mesa do Xico | Comanda para restaurantes com sugestão automática de vinhos";
 const DESCRICAO =
   "Substitua o papel na sala e aumente a venda de vinho com sugestões automáticas geradas por IA a partir do prato pedido. Comanda digital, harmonização inteligente e gestão de menu num só sistema.";
 
@@ -38,6 +40,7 @@ export const metadata: Metadata = {
     description: DESCRICAO,
     type: "website",
     locale: "pt_PT",
+    siteName: "Mesa do Xico",
   },
   twitter: {
     card: "summary_large_image",
@@ -52,7 +55,7 @@ export const metadata: Metadata = {
 const JSON_LD = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "Comanda Digital",
+  name: "Mesa do Xico",
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   description: DESCRICAO,
@@ -77,7 +80,7 @@ export default function Home() {
       <Cabecalho />
       <main>
         <Hero />
-        <Estatisticas />
+        <Projecoes />
 
         <Funcionalidade
           etiqueta="Software de gestão de menu"

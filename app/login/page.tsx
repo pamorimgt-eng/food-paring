@@ -52,7 +52,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-full max-w-xs flex-col items-center justify-center px-6 py-16">
-      <h1 className="mb-1 text-xl font-semibold">Comanda Digital</h1>
+      <h1 className="mb-1 text-xl font-semibold">Mesa do Xico</h1>
       <p className="mb-8 text-sm text-slate-600 dark:text-slate-400">Introduz o teu PIN</p>
 
       <div className="mb-6 flex gap-3" aria-live="polite">

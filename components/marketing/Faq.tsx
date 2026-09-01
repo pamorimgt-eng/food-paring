@@ -6,7 +6,7 @@ const PERGUNTAS = [
   {
     pergunta: "Preciso de trocar o meu sistema de pedidos (POS) atual?",
     resposta:
-      "Hoje a Comanda Digital funciona como o sistema de comanda e cozinha do restaurante — não se liga a um POS existente. Se já usa um POS para pagamentos, os dois podem correr lado a lado.",
+      "Hoje o Mesa do Xico funciona como o sistema de comanda e cozinha do restaurante — não se liga a um POS existente. Se já usa um POS para pagamentos, os dois podem correr lado a lado.",
   },
   {
     pergunta: "Quanto tempo demora a carregar o menu e a carta de vinhos?",

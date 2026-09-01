@@ -1,10 +1,10 @@
 {
-  "name": "Comanda Digital",
-  "short_name": "Comanda",
+  "name": "Mesa do Xico",
+  "short_name": "Mesa do Xico",
   "description": "Comanda digital com sugestão automática de vinhos.",
-  "start_url": "/",
+  "start_url": "/portal",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#7a1e37",
+  "background_color": "#f1f3e0",
+  "theme_color": "#c1283b",
   "icons": []
 }
